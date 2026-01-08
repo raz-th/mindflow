@@ -1,18 +1,28 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Checkbox from "expo-checkbox";
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
+
+import Feather from "@expo/vector-icons/Feather";
+import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../Context/ThemeContext";
+
+
 
 export default function HomeScreen() {
   const [tasks, setTasks] = useState([]);
   const [notes, setNotes] = useState([]);
   const [name, setName] = useState("User");
+  const { isDarkMode } = useTheme();
+  const styles = isDarkMode ? stylesDarkMode : stylesWhiteMode;
 
-  const onToggle = (index, newValue) => {
-    setTasks((prev) =>
-      prev.map((t, i) => (i === index ? { ...t, value: newValue } : t))
-    );
-  };
+  const nav = useNavigation();
+
+  // const onToggle = (index, newValue) => {
+  //   setTasks((prev) =>
+  //     prev.map((t, i) => (i === index ? { ...t, value: newValue } : t))
+  //   );
+  // };
 
   const STORAGE_KEY_NOTES = "@taskmind_notes";
   const STORAGE_KEY_TASKS = "@taskmind_tasks";
@@ -42,8 +52,6 @@ export default function HomeScreen() {
     })();
   }, []);
 
-
-
   const todayString = () => {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -54,7 +62,7 @@ export default function HomeScreen() {
 
   const tomorrowString = () => {
     const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate()+1);
+    tomorrow.setDate(tomorrow.getDate() + 1);
     const yyyy = tomorrow.getFullYear();
     const mm = String(tomorrow.getMonth() + 1).padStart(2, "0");
     const dd = String(tomorrow.getDate()).padStart(2, "0");
@@ -63,83 +71,85 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={{ width: "100%", alignItems: "flex-end" }}>
+        <Pressable onPress={() => nav.navigate("Profile")}>
+          <Feather name="user" size={24} color={isDarkMode ? "#fff" : "#000"} />
+        </Pressable>
+      </View>
       <Text style={styles.helloText}>Hello, {name}</Text>
+
       <View style={styles.card}>
-        <Text style={{ fontSize: 20 }}>Today's tasks</Text>
+        <Text style={[{ fontSize: 20 }, styles.text]}>Today's tasks</Text>
         {tasks.filter((v) => v.day === todayString()).length > 0 ? (
           tasks
             .filter((v) => v.day === todayString())
             .map((task, index) => (
               <View key={index} style={styles.taskCont}>
                 <Checkbox
-                  color={task.value ? "#4d7ab7" : "#000"}
+                  color={task.value ? "#4d7ab7" : isDarkMode ? "#fff" : "#000"}
                   // onValueChange={(v) => onToggle(index, v)}
                   // value={t}
                   style={styles.checkbox}
                 />
-                <Text>{task.title}</Text>
+                <Text style={[styles.text]} numberOfLines={1} ellipsizeMode="tail">{task.title}</Text>
               </View>
             ))
         ) : (
-          <Text style={{ marginTop: 20 }}>No tasks for today :)</Text>
+          <Text style={[{ marginTop: 20 }, styles.text]}>
+            No tasks for today :)
+          </Text>
         )}
       </View>
       <View style={styles.card}>
-        <Text style={{ fontSize: 20 }}>Notes</Text>
+        <Text style={[{ fontSize: 20 }, styles.text]}>Notes</Text>
         {notes.slice(0, 4).map((note, index) => (
           <View key={index} style={styles.taskCont}>
             <View style={styles.bullet} />
-            <Text style={styles.noteText}>{note.title}</Text>
+            <Text style={styles.noteText} numberOfLines={1} ellipsizeMode="tail">{note.title}</Text>
           </View>
         ))}
       </View>
       <View style={styles.card}>
-        <Text style={{ fontSize: 20 }}>Tomorrow's tasks</Text>
+        <Text style={[{ fontSize: 20 }, styles.text]}>Tomorrow's tasks</Text>
         {tasks.filter((v) => v.day === tomorrowString()).length > 0 ? (
           tasks
             .filter((v) => v.day === tomorrowString())
             .map((task, index) => (
               <View key={index} style={styles.taskCont}>
                 <Checkbox
-                  color={task.value ? "#4d7ab7" : "#000"}
+                  color={task.value ? "#4d7ab7" : isDarkMode ? "#fff" : "#000"}
                   // onValueChange={(v) => onToggle(index, v)}
                   // value={task.value}
                   style={styles.checkbox}
                 />
-                <Text>{task.title}</Text>
+                <Text style={[styles.text]} numberOfLines={1} ellipsizeMode="tail">{task.title}</Text>
               </View>
             ))
         ) : (
-          <Text style={{ marginTop: 20 }}>No tasks for today :)</Text>
+          <Text style={[{ marginTop: 20 }, styles.text]}>
+            No tasks for today :)
+          </Text>
         )}
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const commonStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
     padding: 20,
-    paddingTop: 100,
-    // alignItems: 'center',
-    // justifyContent: 'center',
+    paddingTop: 20,
   },
   helloText: {
     fontSize: 35,
     fontWeight: "bold",
   },
   card: {
-    shadowColor: "#0000007a",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    backgroundColor: "#f9f9f9",
     borderRadius: 10,
     padding: 20,
     marginTop: 20,
@@ -154,13 +164,44 @@ const styles = StyleSheet.create({
     borderRadius: 90,
   },
   bullet: {
-    width: 5,
-    height: 5,
+    width: 6,
+    height: 6,
     borderRadius: 8,
-    backgroundColor: "#000",
     marginRight: 10,
   },
   noteText: {
     flex: 1,
+    maxWidth: '90%'
   },
+  text:{
+    maxWidth: "90%",
+  }
+});
+
+const stylesWhiteMode = StyleSheet.create({
+  ...commonStyles,
+  container: { ...commonStyles.container, backgroundColor: "#fff" },
+  helloText: { ...commonStyles.helloText, color: "#000" },
+  card: {
+    ...commonStyles.card,
+    backgroundColor: "#f9f9f9",
+    shadowColor: "#000",
+  },
+  text: { ...commonStyles.text, color: "#000" },
+  bullet: { ...commonStyles.bullet, backgroundColor: "#000" },
+  noteText: { ...commonStyles.noteText, color: "#000" },
+});
+
+const stylesDarkMode = StyleSheet.create({
+  ...commonStyles,
+  container: { ...commonStyles.container, backgroundColor: "#1c1c1e" },
+  helloText: { ...commonStyles.helloText, color: "#fff" },
+  card: {
+    ...commonStyles.card,
+    backgroundColor: "#2c2c2e",
+    shadowColor: "#000",
+  },
+  text: { ...commonStyles.text, color: "#fff" },
+  bullet: { ...commonStyles.bullet, backgroundColor: "#fff" },
+  noteText: { ...commonStyles.noteText, color: "#fff" },
 });

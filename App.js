@@ -8,7 +8,6 @@ import {
   View,
   Animated,
   TextInput,
-  Button,
 } from "react-native";
 import Entypo from "@expo/vector-icons/Entypo";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
@@ -18,6 +17,9 @@ import { MaterialIcons } from "@expo/vector-icons";
 import NotesScreen from "./Screens/Notes";
 import CalendarScreen from "./Screens/Calendar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import Profile, { STORAGE_KEY_DARK_MODE } from "./Screens/Profile";
+import { ThemeProvider, useTheme } from "./Context/ThemeContext";
 
 const Stack = createNativeStackNavigator();
 
@@ -27,12 +29,14 @@ function RootStack({ anim }) {
       screenOptions={{
         headerShown: false,
         animation: anim,
+        animationDuration: .01
       }}
     >
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="Tasks" component={TasksScreen} />
       <Stack.Screen name="Notes" component={NotesScreen} />
       <Stack.Screen name="Calendar" component={CalendarScreen} />
+      <Stack.Screen name="Profile" component={Profile} />
     </Stack.Navigator>
   );
 }
@@ -50,8 +54,17 @@ const removeName = async () => {
 function NavBar({ setAnim }) {
   const nav = useNavigation();
   const [selected, setSelected] = useState(0);
+  const [styles, setStyles] = useState(stylesWhiteMode);
+  const { isDarkMode } = useTheme();
+  const [iconsColor, setIconsColor] = useState("#000");
+
+  useEffect(() => {
+    setStyles(isDarkMode ? stylesDarkMode : stylesWhiteMode);
+    setIconsColor(isDarkMode ? "#fff" : "#000");
+  }, [isDarkMode]);
+
   return (
-    <View style={style.nav}>
+    <View style={styles.nav}>
       <Pressable
         onPress={() => {
           nav.navigate("Home");
@@ -59,11 +72,11 @@ function NavBar({ setAnim }) {
           setSelected(0);
         }}
       >
-        <View style={[style.iconWrap, selected === 0 && style.selectedWrap]}>
+        <View style={[styles.iconWrap, selected === 0 && styles.selectedWrap]}>
           <Entypo
             name="home"
             size={20}
-            color={selected === 0 ? "#fff" : "#000"}
+            color={selected === 0 ? "#fff" : iconsColor}
           />
         </View>
       </Pressable>
@@ -75,11 +88,11 @@ function NavBar({ setAnim }) {
           setSelected(1);
         }}
       >
-        <View style={[style.iconWrap, selected === 1 && style.selectedWrap]}>
+        <View style={[styles.iconWrap, selected === 1 && styles.selectedWrap]}>
           <FontAwesome5
             name="tasks"
             size={20}
-            color={selected === 1 ? "#fff" : "#000"}
+            color={selected === 1 ? "#fff" : iconsColor}
           />
         </View>
       </Pressable>
@@ -91,11 +104,11 @@ function NavBar({ setAnim }) {
           setSelected(2);
         }}
       >
-        <View style={[style.iconWrap, selected === 2 && style.selectedWrap]}>
+        <View style={[styles.iconWrap, selected === 2 && styles.selectedWrap]}>
           <MaterialIcons
             name="notes"
             size={20}
-            color={selected === 2 ? "#fff" : "#000"}
+            color={selected === 2 ? "#fff" : iconsColor}
           />
         </View>
       </Pressable>
@@ -107,28 +120,29 @@ function NavBar({ setAnim }) {
           setSelected(3);
         }}
       >
-        <View style={[style.iconWrap, selected === 3 && style.selectedWrap]}>
+        <View style={[styles.iconWrap, selected === 3 && styles.selectedWrap]}>
           <Entypo
             name="calendar"
             size={20}
-            color={selected === 3 ? "#fff" : "#000"}
+            color={selected === 3 ? "#fff" : iconsColor}
           />
         </View>
       </Pressable>
 
-      {/* <View style={style.iconWrap}>
+      {/* <View style={styles.iconWrap}>
         <FontAwesome name="user" size={20} color="#000" />
       </View> */}
     </View>
   );
 }
 
-export default function App() {
+const AppContent = () => {
   const [firstTime, setFirstTime] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim2 = useRef(new Animated.Value(0)).current;
   const [welcomeText, setwelcomeText] = useState("Hello!");
   const [name, setName] = useState("");
+  const [styles, setStyles] = useState(stylesWhiteMode);
 
   const [anim, setAnim] = useState("slide_from_right");
   // removeName()
@@ -151,6 +165,7 @@ export default function App() {
 
   function startApp() {
     setFirstTime(false);
+    setStyles(stylesWhiteMode);
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ name: name.trim() }));
   }
 
@@ -230,7 +245,7 @@ export default function App() {
           <TextInput
             value={name}
             onChangeText={setName}
-            style={style.input}
+            style={styles.input}
             placeholder="Your name..."
           />
           <Pressable
@@ -238,27 +253,84 @@ export default function App() {
               if (name.trim()) startApp();
             }}
           >
-            <Text style={style.btn}>Get Started</Text>
+            <Text style={styles.btn}>Get Started</Text>
           </Pressable>
         </Animated.View>
       </View>
     );
   else {
     return (
-      <NavigationContainer>
-        <RootStack anim={anim}/>
-        <NavBar setAnim={setAnim}/>
-      </NavigationContainer>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <SafeAreaView
+            style={{
+              flex: 1,
+              backgroundColor: useTheme().isDarkMode ? "#1c1c1e" : "#fff",
+            }}
+          >
+            <RootStack anim={anim} />
+          </SafeAreaView>
+          <NavBar setAnim={setAnim} />
+        </NavigationContainer>
+      </SafeAreaProvider>
     );
   }
+};
+
+export default function App() {
+  return (<ThemeProvider><AppContent/></ThemeProvider>)
 }
 
-const style = StyleSheet.create({
+const stylesWhiteMode = StyleSheet.create({
   nav: {
     height: 60,
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderColor: "#ddd",
+    position: "relative",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  iconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 90,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  selectedWrap: {
+    backgroundColor: "#4d7ab7",
+    borderRadius: 90,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#eee",
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    marginBottom: 8,
+    width: "70%",
+  },
+  btn: {
+    marginLeft: 10,
+    backgroundColor: "#4d7ab7",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    color: "#fff",
+  },
+});
+
+const stylesDarkMode = StyleSheet.create({
+  nav: {
+    height: 60,
+    backgroundColor: "#1c1c1e",
+    borderTopWidth: 1,
+    borderColor: "#000000ff",
     position: "relative",
     bottom: 0,
     left: 0,
